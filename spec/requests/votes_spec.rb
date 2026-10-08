@@ -16,7 +16,7 @@ RSpec.describe "Votes", type: :request do
   end
 
   context "when signed in" do
-    before { cookies[:test_user_id] = "user_1" }
+    before { sign_in("user_1") }
 
     it "records the vote and redirects with a confirmation" do
       expect {

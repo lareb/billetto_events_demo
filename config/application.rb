@@ -39,21 +39,25 @@ module BillettoEventsDemo
     # Don't generate system test files.
     config.generators.system_tests = nil
 
-    # Clerk's middleware raises without credentials, even on anonymous
-    # requests, so skip it and use a stub session when no keys are set. This
-    # has to happen here: by the time config/initializers runs, Clerk's railtie
-    # has already decided whether to insert the middleware.
-    #
-    # The stub signs you in as whoever you ask for, so it must never run in
-    # production — missing keys there is a misconfiguration, not a fallback.
-    clerk = credentials.clerk || {}
-    keys_missing = clerk[:secret_key].blank? || clerk[:publishable_key].blank?
+    # Tests fake the session instead of talking to Clerk (see
+    # ApplicationController#stub_clerk_session). Everywhere else Clerk is
+    # required — its middleware raises without credentials anyway, even on
+    # anonymous requests. This has to be decided here: by the time
+    # config/initializers runs, Clerk's railtie has already chosen whether to
+    # insert the middleware.
+    config.x.clerk_stubbed = Rails.env.test?
 
-    if keys_missing && Rails.env.production?
-      raise "Clerk credentials are missing. Set clerk.publishable_key and clerk.secret_key in credentials."
+    if config.x.clerk_stubbed
+      ENV["CLERK_SKIP_RAILTIE"] = "1"
+    else
+      clerk = credentials.clerk || {}
+      publishable = clerk[:publishable_key].presence || ENV["CLERK_PUBLISHABLE_KEY"]
+      secret = clerk[:secret_key].presence || ENV["CLERK_SECRET_KEY"]
+
+      if publishable.blank? || secret.blank?
+        raise "Clerk credentials are missing. Set clerk.publishable_key and clerk.secret_key " \
+              "in credentials, or CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY in the environment."
+      end
     end
-
-    config.x.clerk_stubbed = keys_missing
-    ENV["CLERK_SKIP_RAILTIE"] = "1" if config.x.clerk_stubbed
   end
 end

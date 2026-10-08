@@ -13,9 +13,8 @@ RSpec.describe "Voting on an event", type: :system do
     within("#events_event_#{event.id}") { expect(page).to have_button("▲ 0") }
   end
 
-  it "signs a user in, records their vote, and signs them out again" do
-    visit root_path
-    click_link "Sign in"
+  it "records a signed-in user's vote and signs them out again" do
+    sign_in_in_browser("demo-user")
     expect(page).to have_content("demo-user")
 
     within("#events_event_#{event.id}") { click_button "▲ 0" }
@@ -27,14 +26,26 @@ RSpec.describe "Voting on an event", type: :system do
   end
 
   it "moves the vote across when a user changes their mind" do
-    visit root_path
-    click_link "Sign in"
+    sign_in_in_browser("demo-user")
 
     within("#events_event_#{event.id}") { click_button "▲ 0" }
     within("#events_event_#{event.id}") { click_button "▼ 0" }
 
     within("#events_event_#{event.id}") do
       expect(page).to have_button("▲ 0")
+      expect(page).to have_button("▼ 1")
+    end
+  end
+
+  it "counts two users' votes on the same event separately" do
+    sign_in_in_browser("user-one")
+    within("#events_event_#{event.id}") { click_button "▲ 0" }
+
+    sign_in_in_browser("user-two")
+    within("#events_event_#{event.id}") { click_button "▼ 0" }
+
+    within("#events_event_#{event.id}") do
+      expect(page).to have_button("▲ 1")
       expect(page).to have_button("▼ 1")
     end
   end

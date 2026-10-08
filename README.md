@@ -23,7 +23,7 @@ The database config defaults to `postgres`/`postgres` on localhost. Override
 with `DATABASE_USERNAME`, `DATABASE_PASSWORD` and `DATABASE_HOST` if yours
 differ.
 
-### Credentials (optional — the app runs without them)
+### Credentials
 
 Everything lives in Rails' encrypted credentials:
 
@@ -37,16 +37,20 @@ billetto:
   api_id: "..."
   api_secret: "..."
 
-# Clerk: dashboard → Configure → API Keys, and → Account Portal for the URLs
+# Clerk: dashboard → Configure → API Keys, and → Account Portal for the URLs.
+# Note the portal host has no `.clerk` in it, unlike the Frontend API URL.
 clerk:
   publishable_key: "pk_test_..."
   secret_key: "sk_test_..."
-  sign_in_url: "https://your-app.clerk.accounts.dev/sign-in"
-  sign_up_url: "https://your-app.clerk.accounts.dev/sign-up"
+  sign_in_url: "https://your-app.accounts.dev/sign-in"
+  sign_up_url: "https://your-app.accounts.dev/sign-up"
 ```
 
-You'll need `config/master.key` (not in the repo) to edit or read these. With
-neither block set the app still runs — see [Fallbacks](#fallbacks) below.
+You'll need `config/master.key` (not in the repo) to edit or read these. Both
+blocks also fall back to environment variables (`BILLETTO_API_ID`,
+`CLERK_SECRET_KEY`, and so on), so a fresh clone without the master key can
+still be run. Billetto is optional; Clerk is not — see
+[Fallbacks](#fallbacks).
 
 ### Run
 
@@ -63,10 +67,10 @@ Then open http://localhost:3000.
 bundle exec rspec
 ```
 
-34 examples covering the `Event` model validations, the Billetto adapter's HTTP
+35 examples covering the `Event` model validations, the Billetto adapter's HTTP
 error handling (stubbed with WebMock), the auth gate on voting, the vote events
-and read model, and three browser specs driving real headless Chrome through
-sign-in, voting and sign-out.
+and read model, and four browser specs driving real headless Chrome through
+sign-in, voting, vote-switching and sign-out. They need no credentials.
 
 ## Rails Event Store setup
 
@@ -162,18 +166,18 @@ account to confirm the real path or response shape against. It's overridable
 with `BILLETTO_API_PATH`, and `Events::EventMapper` checks a few likely key
 spellings so a renamed field doesn't break ingestion outright.
 
-**Clerk.** Clerk's middleware raises without credentials, even on anonymous
-requests, so with no keys set the app skips it (`CLERK_SKIP_RAILTIE`) and uses a
-stub session instead — `TestSessionsController` signs you in as whatever user id
-you ask for, and `ApplicationController#stub_clerk_session` reads it back off a
-cookie. With real keys configured the middleware and the hosted Account Portal
-take over, and the stub route isn't drawn at all.
+**Clerk.** Clerk is required to run the app — it has no fallback and missing
+keys raise at boot. Since `config/master.key` isn't in the repo, keys can come
+from `CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` (and `CLERK_SIGN_IN_URL` /
+`CLERK_SIGN_UP_URL`) instead of credentials, same as the Billetto ones.
 
-The stub exists for two reasons: the browser specs can't drive Clerk's hosted
-pages on another domain behind an email code, and `config/master.key` isn't in
-the repo, so a fresh clone would otherwise need a Clerk account before the app
-would start. Because it would be a free pass if it ever ran for real, missing
-Clerk credentials in production raise at boot rather than falling back to it.
+Tests are the exception: they fake the session rather than reaching Clerk, since
+the browser specs can't drive hosted pages on another domain behind an emailed
+code. `ApplicationController#stub_clerk_session` reads a user id off a cookie
+that the specs set themselves (`spec/support/sign_in_helpers.rb`), and it is
+only wired up when `Rails.env.test?`. There's no sign-in route or controller
+backing it, so nothing to leave switched on by accident — `bundle exec rspec`
+works on a fresh clone with no credentials at all.
 
 Sign-out needs a bit of care. Clerk has no hosted sign-out page, so
 `SessionsController` revokes the session through the backend API and clears the

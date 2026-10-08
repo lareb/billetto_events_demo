@@ -20,33 +20,37 @@ class ApplicationController < ActionController::Base
   end
 
   def clerk_sign_in_url
-    clerk_portal_url(Rails.application.credentials.dig(:clerk, :sign_in_url))
+    clerk_portal_url(clerk_config[:sign_in_url] || ENV["CLERK_SIGN_IN_URL"])
   end
 
   def clerk_sign_up_url
-    clerk_portal_url(Rails.application.credentials.dig(:clerk, :sign_up_url))
+    clerk_portal_url(clerk_config[:sign_up_url] || ENV["CLERK_SIGN_UP_URL"])
+  end
+
+  def clerk_config
+    Rails.application.credentials.clerk || {}
   end
 
   # Clerk's hosted pages live on another domain, so they need telling where to
   # send the browser back to.
   def clerk_portal_url(url)
-    return url if url.blank?
+    return "#" if url.blank?
 
     uri = URI.parse(url)
     uri.query = URI.encode_www_form(URI.decode_www_form(uri.query.to_s) << [ "redirect_url", root_url ])
     uri.to_s
   end
 
-  # Stands in for Clerk when no keys are configured. The cookie is set by
-  # TestSessionsController.
+  # Tests don't talk to Clerk — they set this cookie and we believe it. Only
+  # wired up in the test environment (see config/application.rb).
   def stub_clerk_session
-    request.env["clerk"] = TestClerkProxy.new(cookies[:test_user_id])
+    request.env["clerk"] = StubClerkSession.new(cookies[:test_user_id])
   end
 
-  TestClerkProxy = Struct.new(:user_id) do
+  StubClerkSession = Struct.new(:user_id) do
     def user?
       user_id.present?
     end
   end
-  private_constant :TestClerkProxy
+  private_constant :StubClerkSession
 end
