@@ -8,7 +8,7 @@ Rails.configuration.to_prepare do
     if api_id.present? && api_secret.present?
       Billetto::Adapter.new(api_id: api_id, api_secret: api_secret)
     else
-      Rails.logger.warn("[Billetto] no API credentials configured — using FakeAdapter (sample events only)")
+      Rails.logger.warn("[Billetto] no API credentials configured, using FakeAdapter (sample events only)")
       Billetto::FakeAdapter.new
     end
 end

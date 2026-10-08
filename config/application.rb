@@ -41,7 +41,7 @@ module BillettoEventsDemo
 
     # Tests fake the session instead of talking to Clerk (see
     # ApplicationController#stub_clerk_session). Everywhere else Clerk is
-    # required — its middleware raises without credentials anyway, even on
+    # required, and its middleware raises without credentials anyway, even on
     # anonymous requests. This has to be decided here: by the time
     # config/initializers runs, Clerk's railtie has already chosen whether to
     # insert the middleware.

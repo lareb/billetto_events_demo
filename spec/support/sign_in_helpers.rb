@@ -1,5 +1,5 @@
 # Tests fake the Clerk session with a cookie rather than driving Clerk's hosted
-# pages — see ApplicationController#stub_clerk_session.
+# pages. See ApplicationController#stub_clerk_session.
 module SignInHelpers
   # Request specs: cookies are writable directly.
   def sign_in(user_id)

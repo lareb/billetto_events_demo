@@ -41,7 +41,7 @@ class ApplicationController < ActionController::Base
     uri.to_s
   end
 
-  # Tests don't talk to Clerk — they set this cookie and we believe it. Only
+  # Tests don't talk to Clerk; they set this cookie and we believe it. Only
   # wired up in the test environment (see config/application.rb).
   def stub_clerk_session
     request.env["clerk"] = StubClerkSession.new(cookies[:test_user_id])

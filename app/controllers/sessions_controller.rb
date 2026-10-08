@@ -1,5 +1,5 @@
 class SessionsController < ApplicationController
-  # Clerk has no hosted sign-out page — the session has to be revoked through
+  # Clerk has no hosted sign-out page, so the session is revoked through
   # the backend API and the cookies cleared here. This route is excluded from
   # Clerk's middleware (config/initializers/clerk.rb), so the session is read
   # straight off the cookie rather than from request.env["clerk"].

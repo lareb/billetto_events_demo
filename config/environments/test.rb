@@ -6,7 +6,7 @@
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
-  # Always stub Clerk here, even if real keys are set in the shell — tests
+  # Always stub Clerk here, even if real keys are set in the shell. Tests
   # shouldn't depend on reaching Clerk's API.
   ENV["CLERK_SKIP_RAILTIE"] = "1"
   config.x.clerk_stubbed = true

@@ -2,7 +2,7 @@ module Command
   class Error < StandardError; end
   class NotRegistered < Error; end
 
-  # Simple commands that carry their own logic in #call. Nothing to register —
+  # Simple commands that carry their own logic in #call. Nothing to register:
   # the bus validates and runs them directly.
   module Executable
     extend ActiveSupport::Concern

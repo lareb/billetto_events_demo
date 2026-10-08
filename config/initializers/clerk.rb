@@ -8,7 +8,7 @@ Clerk.configure do |config|
 
   # Clerk's middleware answers some requests with a redirect to its handshake
   # endpoint, which only speaks GET. On a DELETE that redirect is followed with
-  # the original method and comes back 405, so sign-out is handled outside it —
-  # see SessionsController.
+  # the original method and comes back 405, so sign-out is handled outside it.
+  # See SessionsController.
   config.excluded_routes = [ "/sign_out" ]
 end

@@ -3,7 +3,7 @@
 <h1>Upcoming Events</h1>
 
 <% if @events.empty? %>
-  <p>No events yet — run <code>bin/rails runner "Command.bus.call(Events::IngestFromBilletto.new)"</code> to ingest from Billetto.</p>
+  <p>No events yet. Run <code>bin/rails events:ingest</code> to fetch them from Billetto.</p>
 <% end %>
 
 <ul class="events">

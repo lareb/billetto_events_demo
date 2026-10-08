@@ -1,44 +1,32 @@
 # Billetto Events Demo
 
-A Rails app that pulls events from the Billetto API, lists them, and lets
+Rails app that pulls events from the Billetto API, lists them, and lets
 signed-in users upvote or downvote each one. Votes are stored as domain events
-in Rails Event Store; an async read model keeps the counts shown on the page.
+in Rails Event Store, with a read model holding the counts shown on the page.
 
 ## Setup
 
-### Prerequisites
-
-- Ruby 3.2+
-- PostgreSQL 14+ running locally
-- Chrome (only for the browser specs)
-
-### Install
+Needs Ruby 3.2+, PostgreSQL 14+, and Chrome for the browser specs.
 
 ```bash
 bundle install
 bin/rails db:create db:migrate
 ```
 
-The database config defaults to `postgres`/`postgres` on localhost. Override
-with `DATABASE_USERNAME`, `DATABASE_PASSWORD` and `DATABASE_HOST` if yours
-differ.
+Database defaults to `postgres`/`postgres` on localhost; override with
+`DATABASE_USERNAME`, `DATABASE_PASSWORD`, `DATABASE_HOST`.
 
 ### Credentials
-
-Everything lives in Rails' encrypted credentials:
 
 ```bash
 bin/rails credentials:edit
 ```
 
 ```yaml
-# Billetto: organiser account → Integrate → Developers
 billetto:
   api_id: "..."
   api_secret: "..."
 
-# Clerk: dashboard → Configure → API Keys, and → Account Portal for the URLs.
-# Note the portal host has no `.clerk` in it, unlike the Frontend API URL.
 clerk:
   publishable_key: "pk_test_..."
   secret_key: "sk_test_..."
@@ -46,11 +34,14 @@ clerk:
   sign_up_url: "https://your-app.accounts.dev/sign-up"
 ```
 
-You'll need `config/master.key` (not in the repo) to edit or read these. Both
-blocks also fall back to environment variables (`BILLETTO_API_ID`,
-`CLERK_SECRET_KEY`, and so on), so a fresh clone without the master key can
-still be run. Billetto is optional; Clerk is not — see
-[Fallbacks](#fallbacks).
+Clerk's keys are on the dashboard under Configure > API Keys, the portal URLs
+under Account Portal. Note the portal host has no `.clerk` in it, unlike the
+Frontend API URL on the same page.
+
+Editing these needs `config/master.key`, which isn't in the repo. Both blocks
+fall back to environment variables (`BILLETTO_API_ID`, `CLERK_SECRET_KEY` and
+so on) if you'd rather not set up credentials. Billetto is optional, Clerk
+isn't: without its keys the app raises at boot.
 
 ### Run
 
@@ -59,139 +50,83 @@ bin/rails db:seed      # or: bin/rails events:ingest
 bin/rails server
 ```
 
-Then open http://localhost:3000.
-
 ### Test
 
 ```bash
 bundle exec rspec
 ```
 
-35 examples covering the `Event` model validations, the Billetto adapter's HTTP
-error handling (stubbed with WebMock), the auth gate on voting, the vote events
-and read model, and four browser specs driving real headless Chrome through
-sign-in, voting, vote-switching and sign-out. They need no credentials.
+35 examples: model validations, the Billetto adapter against stubbed HTTP, the
+auth gate on voting, the vote events and read model, and four browser specs
+through headless Chrome. No credentials needed.
 
-## Rails Event Store setup
+`HEADLESS=false` runs the browser specs in a visible window, `SLOWMO=1.5` adds a
+pause after each click.
 
-Installed with the `rails_event_store` gem. Three pieces:
+## Rails Event Store
 
-**1. Tables.** Generated with
+Tables come from the gem's generator:
 
 ```bash
 bin/rails generate ruby_event_store:active_record:migration
-bin/rails db:migrate
 ```
 
-which creates `event_store_events` and `event_store_events_in_streams`.
+`config/initializers/rails_event_store.rb` builds the client and registers
+subscriptions. Each domain module exposes `self.subscriptions` and
+`lib/application_subscriptions.rb` merges them, so adding a module means adding
+one merge there.
 
-**2. Client.** `config/initializers/rails_event_store.rb` builds the client and
-registers subscriptions:
-
-```ruby
-Rails.configuration.event_store = RailsEventStore::Client.new
-ApplicationSubscriptions.subscribe!(Rails.configuration.event_store)
-```
-
-The default client dispatches ActiveJob subscribers after the surrounding
-transaction commits, and runs plain-object subscribers synchronously.
-
-**3. Subscriptions.** Each domain module exposes `self.subscriptions`, and
-`lib/application_subscriptions.rb` merges them:
-
-```ruby
-module Votes
-  def self.subscriptions
-    {
-      Votes::EventUpvoted => [ VoteCountJob ],
-      Votes::EventDownvoted => [ VoteCountJob ]
-    }
-  end
-end
-```
-
-Events are `Fact` subclasses (`app/domain/fact.rb`) declaring a `SCHEMA` and
-the stream they belong to:
-
-```ruby
-class EventUpvoted < Fact
-  SCHEMA = { event_id: Integer, user_id: String, previous_direction: String }.freeze
-
-  def stream_names
-    [ "Event$#{data.fetch(:event_id)}" ]
-  end
-end
-```
-
-One stream per event, so a single event's vote history reads back with:
+Events subclass `Fact` (`app/domain/fact.rb`) with a `SCHEMA` and the stream
+they belong to. Votes go to one stream per event, `Event$<id>`, so a single
+event's history reads back with:
 
 ```bash
 bin/rails runner 'pp Rails.configuration.event_store.read.stream("Event$1").to_a'
 ```
 
-Because `vote_counts` is derived state, it can be rebuilt from the stream at
-any time by replaying those facts through `VoteCountJob`.
+`vote_counts` is derived, so it can be rebuilt from those facts at any time.
 
 ## Design notes
 
-Structure follows the team's Developer's Guide: domain logic under
-`app/domain/<module>/`, controllers that only build a command and hand it to the
-command bus (`lib/command.rb`), state changes published as facts, and display
-data served by a read model.
+Laid out the way the Developer's Guide describes: domain logic under
+`app/domain/<module>/`, controllers that build a command and hand it to the bus
+(`lib/command.rb`), state changes published as facts, display data from a read
+model.
 
-- `app/domain/events/` — the `Event` model plus `IngestFromBilletto`. Plain
-  CRUD; ingestion isn't a business event here so it publishes nothing.
-- `app/domain/votes/` — the event-sourced part. `CastVote` → `Votes::Service` →
-  publishes `EventUpvoted` / `EventDownvoted`.
-- `app/jobs/vote_count_job.rb` — subscribes to those facts on the `low` queue
-  and maintains the `vote_counts` read model in `app/read_models/`.
-- `app/integrations/billetto/` — API wrapper, with a fake adapter for tests and
-  credential-less runs.
+- `app/domain/events/` holds the `Event` model and `IngestFromBilletto`. Plain
+  CRUD, since ingestion isn't a business event here.
+- `app/domain/votes/` is the event-sourced half: `CastVote` goes to
+  `Votes::Service`, which publishes `EventUpvoted` or `EventDownvoted`.
+- `app/jobs/vote_count_job.rb` subscribes to those on the `low` queue and keeps
+  `vote_counts` up to date.
+- `app/integrations/billetto/` wraps the API, with a fake adapter for tests.
 
-A user gets one vote per event, backed by a unique index on
-`(event_id, user_id)`. Changing a vote updates that row and publishes a new
-fact; the read model moves the count between buckets. Clicking the same
-direction twice is a no-op — without that guard the count climbs on every
-click.
+One vote per event per user, backed by a unique index on `(event_id, user_id)`.
+Changing a vote updates the row and publishes a new fact, and the read model
+moves the count across. Clicking the same direction twice does nothing,
+otherwise the count climbs on every click.
 
-### Fallbacks
+Sign-in uses Clerk's hosted pages. Sign-out is ours: Clerk has no hosted
+sign-out, so `SessionsController` revokes the session over the backend API and
+clears the `__session` and `__client_uat` cookies. That route is excluded from
+Clerk's middleware, which redirects some requests to a handshake endpoint that
+only accepts GET and turns the DELETE into a 405.
 
-**Billetto.** With no API credentials the app uses `Billetto::FakeAdapter` and
-its three sample events, so the listing page is never empty. If the real API
-call fails, `Events::Service` logs it and leaves existing events alone rather
-than raising.
-
-The endpoint path in `Billetto::Adapter` is a best guess — I didn't have an
-account to confirm the real path or response shape against. It's overridable
-with `BILLETTO_API_PATH`, and `Events::EventMapper` checks a few likely key
-spellings so a renamed field doesn't break ingestion outright.
-
-**Clerk.** Clerk is required to run the app — it has no fallback and missing
-keys raise at boot. Since `config/master.key` isn't in the repo, keys can come
-from `CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` (and `CLERK_SIGN_IN_URL` /
-`CLERK_SIGN_UP_URL`) instead of credentials, same as the Billetto ones.
-
-Tests are the exception: they fake the session rather than reaching Clerk, since
-the browser specs can't drive hosted pages on another domain behind an emailed
-code. `ApplicationController#stub_clerk_session` reads a user id off a cookie
-that the specs set themselves (`spec/support/sign_in_helpers.rb`), and it is
-only wired up when `Rails.env.test?`. There's no sign-in route or controller
-backing it, so nothing to leave switched on by accident — `bundle exec rspec`
-works on a fresh clone with no credentials at all.
-
-Sign-out needs a bit of care. Clerk has no hosted sign-out page, so
-`SessionsController` revokes the session through the backend API and clears the
-`__session` and `__client_uat` cookies. That route is excluded from Clerk's
-middleware (`config/initializers/clerk.rb`): the middleware answers some
-requests with a redirect to a handshake endpoint that only accepts GET, and on a
-DELETE the browser follows it with the original method and gets a 405.
+Tests fake the session rather than driving Clerk's hosted pages, which sit on
+another domain behind an emailed code. `ApplicationController#stub_clerk_session`
+reads a user id off a cookie the specs set themselves, and is only wired up when
+`Rails.env.test?`.
 
 ## Assumptions
 
 - One vote per user per event, changeable rather than additive.
-- Ingestion is pull-based (`bin/rails events:ingest`) rather than webhook-driven.
-- Event images are stored as the URL Billetto returns, not mirrored locally.
-- No `app/integrators/` process manager — voting doesn't cross module
-  boundaries yet. That's where a cross-module reaction would go.
-- No `ObjectRepository` / typed-id lookup from the Developer's Guide; at this
-  size plain ActiveRecord finders are enough.
+- Ingestion is pull-based rather than webhook-driven.
+- Event images are stored as the URL Billetto returns, not mirrored.
+- The endpoint path in `Billetto::Adapter` is a guess: I had no account to check
+  the real path or response shape. It's overridable with `BILLETTO_API_PATH`,
+  and `EventMapper` tries a few key spellings so one renamed field doesn't break
+  ingestion.
+- No `app/integrators/` process manager, since voting doesn't cross module
+  boundaries yet.
+- No `ObjectRepository` or typed-id lookup; plain ActiveRecord finders are
+  enough at this size.

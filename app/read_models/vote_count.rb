@@ -1,4 +1,4 @@
-# Read model. Can be rebuilt from the vote events — see VoteCountJob.
+# Read model. Can be rebuilt from the vote events. See VoteCountJob.
 class VoteCount < ApplicationRecord
   self.table_name = "vote_counts"
 

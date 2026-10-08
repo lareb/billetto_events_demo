@@ -1,5 +1,5 @@
-# Lightweight stand-in for rails_event_store-rspec's have_published matcher
-# (that gem doesn't install cleanly in this sandbox — see README).
+# Stand-in for rails_event_store-rspec's have_published matcher. That gem
+# fails to install here (a symlink in the package trips up bundler).
 RSpec::Matchers.define :have_published_fact do |fact_class, expected_data = {}|
   supports_block_expectations
 
