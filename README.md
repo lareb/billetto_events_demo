@@ -164,14 +164,23 @@ spellings so a renamed field doesn't break ingestion outright.
 
 **Clerk.** Clerk's middleware raises without credentials, even on anonymous
 requests, so with no keys set the app skips it (`CLERK_SKIP_RAILTIE`) and uses a
-stub session instead — `TestSessionsController` sets a cookie that
-`ApplicationController#stub_clerk_session` reads. The test suite always uses
-this path so it never depends on reaching Clerk. With real keys the middleware
-and the hosted sign-in/up/out URLs take over.
+stub session instead — `TestSessionsController` signs you in as whatever user id
+you ask for, and `ApplicationController#stub_clerk_session` reads it back off a
+cookie. With real keys configured the middleware and the hosted Account Portal
+take over, and the stub route isn't drawn at all.
 
-Worth flagging: I built and tested the Clerk path against the stub only. The
-real middleware wiring follows the SDK's Rails integration but I haven't
-exercised it against a live Clerk instance.
+The stub exists for two reasons: the browser specs can't drive Clerk's hosted
+pages on another domain behind an email code, and `config/master.key` isn't in
+the repo, so a fresh clone would otherwise need a Clerk account before the app
+would start. Because it would be a free pass if it ever ran for real, missing
+Clerk credentials in production raise at boot rather than falling back to it.
+
+Sign-out needs a bit of care. Clerk has no hosted sign-out page, so
+`SessionsController` revokes the session through the backend API and clears the
+`__session` and `__client_uat` cookies. That route is excluded from Clerk's
+middleware (`config/initializers/clerk.rb`): the middleware answers some
+requests with a redirect to a handshake endpoint that only accepts GET, and on a
+DELETE the browser follows it with the original method and gets a 405.
 
 ## Assumptions
 

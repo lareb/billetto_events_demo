@@ -43,8 +43,17 @@ module BillettoEventsDemo
     # requests, so skip it and use a stub session when no keys are set. This
     # has to happen here: by the time config/initializers runs, Clerk's railtie
     # has already decided whether to insert the middleware.
+    #
+    # The stub signs you in as whoever you ask for, so it must never run in
+    # production — missing keys there is a misconfiguration, not a fallback.
     clerk = credentials.clerk || {}
-    config.x.clerk_stubbed = clerk[:secret_key].blank? || clerk[:publishable_key].blank?
+    keys_missing = clerk[:secret_key].blank? || clerk[:publishable_key].blank?
+
+    if keys_missing && Rails.env.production?
+      raise "Clerk credentials are missing. Set clerk.publishable_key and clerk.secret_key in credentials."
+    end
+
+    config.x.clerk_stubbed = keys_missing
     ENV["CLERK_SKIP_RAILTIE"] = "1" if config.x.clerk_stubbed
   end
 end
