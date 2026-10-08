@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Billetto Events Demo" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+  </head>
+
+  <body>
+    <header class="site-header">
+      <strong>Billetto Events Demo</strong>
+      <nav>
+        <% stubbed = Rails.configuration.x.clerk_stubbed %>
+        <% if signed_in? %>
+          <span><%= current_user_id %></span>
+          <%= button_to "Sign out", (stubbed ? test_sign_out_path : clerk.sign_out_url), method: (stubbed ? :delete : :get), data: { turbo: false } %>
+        <% else %>
+          <%= link_to "Sign in", (stubbed ? test_sign_in_path(user_id: "demo-user") : clerk.sign_in_url), data: { turbo: false } %>
+          <%= link_to "Sign up", (stubbed ? test_sign_in_path(user_id: "demo-user") : clerk.sign_up_url), data: { turbo: false } %>
+        <% end %>
+      </nav>
+    </header>
+
+    <% if notice %>
+      <p class="flash notice"><%= notice %></p>
+    <% end %>
+    <% if alert %>
+      <p class="flash alert"><%= alert %></p>
+    <% end %>
+
+    <main>
+      <%= yield %>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+require "rails_helper"
+
+RSpec.describe "Voting on an event", type: :system do
+  let!(:event) { create(:event, title: "Ruby on Rails Meetup") }
+
+  it "blocks signed-out visitors from voting" do
+    visit root_path
+
+    expect(page).to have_content("Ruby on Rails Meetup")
+    within("#events_event_#{event.id}") { click_button "▲ 0" }
+
+    expect(page).to have_content("Sign in to vote.")
+    within("#events_event_#{event.id}") { expect(page).to have_button("▲ 0") }
+  end
+
+  it "signs a user in, records their vote, and signs them out again" do
+    visit root_path
+    click_link "Sign in"
+    expect(page).to have_content("demo-user")
+
+    within("#events_event_#{event.id}") { click_button "▲ 0" }
+    expect(page).to have_content("Vote recorded.")
+    within("#events_event_#{event.id}") { expect(page).to have_button("▲ 1") }
+
+    click_button "Sign out"
+    expect(page).to have_link("Sign in")
+  end
+
+  it "moves the vote across when a user changes their mind" do
+    visit root_path
+    click_link "Sign in"
+
+    within("#events_event_#{event.id}") { click_button "▲ 0" }
+    within("#events_event_#{event.id}") { click_button "▼ 0" }
+
+    within("#events_event_#{event.id}") do
+      expect(page).to have_button("▲ 0")
+      expect(page).to have_button("▼ 1")
+    end
+  end
+end

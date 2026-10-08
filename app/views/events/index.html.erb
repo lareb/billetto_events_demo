@@ -1,0 +1,26 @@
+<% content_for :title, "Events" %>
+
+<h1>Upcoming Events</h1>
+
+<% if @events.empty? %>
+  <p>No events yet — run <code>bin/rails runner "Command.bus.call(Events::IngestFromBilletto.new)"</code> to ingest from Billetto.</p>
+<% end %>
+
+<ul class="events">
+  <% @events.each do |event| %>
+    <li class="event" id="<%= dom_id(event) %>">
+      <% if event.image_url.present? %>
+        <%= image_tag event.image_url, alt: event.title, loading: "lazy" %>
+      <% end %>
+
+      <h2><%= event.title %></h2>
+      <p class="event-date"><%= event.starts_at.strftime("%B %-d, %Y %H:%M") %></p>
+      <p class="event-description"><%= event.description %></p>
+
+      <div class="votes">
+        <%= button_to "▲ #{event.upvotes}", vote_event_path(event_id: event.id, direction: "up"), method: :post %>
+        <%= button_to "▼ #{event.downvotes}", vote_event_path(event_id: event.id, direction: "down"), method: :post %>
+      </div>
+    </li>
+  <% end %>
+</ul>
