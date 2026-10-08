@@ -18,9 +18,14 @@ class SessionsController < ApplicationController
 
   def revoke_clerk_session
     session_id = clerk_session_id
-    return if session_id.blank?
+
+    if session_id.blank?
+      Rails.logger.info("[Sessions] no Clerk session cookie to revoke")
+      return
+    end
 
     Clerk::SDK.new.sessions.revoke(session_id: session_id)
+    Rails.logger.info("[Sessions] revoked Clerk session #{session_id}")
   rescue StandardError => e
     # The cookies are cleared either way, so the user is signed out locally.
     # Worst case the session expires on Clerk's side on its own.
