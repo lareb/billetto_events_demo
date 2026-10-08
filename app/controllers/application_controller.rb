@@ -7,7 +7,7 @@ class ApplicationController < ActionController::Base
 
   before_action :stub_clerk_session if Rails.configuration.x.clerk_stubbed
 
-  helper_method :current_user_id, :signed_in?
+  helper_method :current_user_id, :signed_in?, :clerk_sign_in_url, :clerk_sign_up_url
 
   private
 
@@ -17,6 +17,24 @@ class ApplicationController < ActionController::Base
 
   def signed_in?
     clerk.user?
+  end
+
+  def clerk_sign_in_url
+    clerk_portal_url(Rails.application.credentials.dig(:clerk, :sign_in_url))
+  end
+
+  def clerk_sign_up_url
+    clerk_portal_url(Rails.application.credentials.dig(:clerk, :sign_up_url))
+  end
+
+  # Clerk's hosted pages live on another domain, so they need telling where to
+  # send the browser back to.
+  def clerk_portal_url(url)
+    return url if url.blank?
+
+    uri = URI.parse(url)
+    uri.query = URI.encode_www_form(URI.decode_www_form(uri.query.to_s) << [ "redirect_url", root_url ])
+    uri.to_s
   end
 
   # Stands in for Clerk when no keys are configured. The cookie is set by

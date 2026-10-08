@@ -29,10 +29,10 @@
         <% stubbed = Rails.configuration.x.clerk_stubbed %>
         <% if signed_in? %>
           <span><%= current_user_id %></span>
-          <%= button_to "Sign out", (stubbed ? test_sign_out_path : clerk.sign_out_url), method: (stubbed ? :delete : :get), data: { turbo: false } %>
+          <%= button_to "Sign out", sign_out_path, method: :delete, data: { turbo: false } %>
         <% else %>
-          <%= link_to "Sign in", (stubbed ? test_sign_in_path(user_id: "demo-user") : clerk.sign_in_url), data: { turbo: false } %>
-          <%= link_to "Sign up", (stubbed ? test_sign_in_path(user_id: "demo-user") : clerk.sign_up_url), data: { turbo: false } %>
+          <%= link_to "Sign in", (stubbed ? test_sign_in_path(user_id: "demo-user") : clerk_sign_in_url), data: { turbo: false } %>
+          <%= link_to "Sign up", (stubbed ? test_sign_in_path(user_id: "demo-user") : clerk_sign_up_url), data: { turbo: false } %>
         <% end %>
       </nav>
     </header>

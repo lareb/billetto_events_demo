@@ -25,27 +25,28 @@ differ.
 
 ### Credentials (optional — the app runs without them)
 
-Billetto API key pair, from your organiser account under
-Integrate → Developers:
+Everything lives in Rails' encrypted credentials:
 
 ```bash
 bin/rails credentials:edit
-# billetto:
-#   api_id: "..."
-#   api_secret: "..."
 ```
 
-Clerk, from your application's API Keys page:
+```yaml
+# Billetto: organiser account → Integrate → Developers
+billetto:
+  api_id: "..."
+  api_secret: "..."
 
-```bash
-export CLERK_PUBLISHABLE_KEY=pk_test_xxx
-export CLERK_SECRET_KEY=sk_test_xxx
-export CLERK_SIGN_IN_URL=https://your-app.accounts.dev/sign-in
-export CLERK_SIGN_UP_URL=https://your-app.accounts.dev/sign-up
-export CLERK_SIGN_OUT_URL=https://your-app.accounts.dev/sign-out
+# Clerk: dashboard → Configure → API Keys, and → Account Portal for the URLs
+clerk:
+  publishable_key: "pk_test_..."
+  secret_key: "sk_test_..."
+  sign_in_url: "https://your-app.clerk.accounts.dev/sign-in"
+  sign_up_url: "https://your-app.clerk.accounts.dev/sign-up"
 ```
 
-Without either set the app still runs — see [Fallbacks](#fallbacks) below.
+You'll need `config/master.key` (not in the repo) to edit or read these. With
+neither block set the app still runs — see [Fallbacks](#fallbacks) below.
 
 ### Run
 

@@ -40,8 +40,11 @@ module BillettoEventsDemo
     config.generators.system_tests = nil
 
     # Clerk's middleware raises without credentials, even on anonymous
-    # requests, so skip it and use a stub session when no keys are set.
-    config.x.clerk_stubbed = ENV["CLERK_SECRET_KEY"].to_s.empty? || ENV["CLERK_PUBLISHABLE_KEY"].to_s.empty?
+    # requests, so skip it and use a stub session when no keys are set. This
+    # has to happen here: by the time config/initializers runs, Clerk's railtie
+    # has already decided whether to insert the middleware.
+    clerk = credentials.clerk || {}
+    config.x.clerk_stubbed = clerk[:secret_key].blank? || clerk[:publishable_key].blank?
     ENV["CLERK_SKIP_RAILTIE"] = "1" if config.x.clerk_stubbed
   end
 end
