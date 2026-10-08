@@ -17,10 +17,7 @@ class SessionsController < ApplicationController
   private
 
   def revoke_clerk_session
-    token = cookies[Clerk::SESSION_COOKIE]
-    return if token.blank?
-
-    session_id = Clerk::SDK.new.verify_token(token)["sid"]
+    session_id = clerk_session_id
     return if session_id.blank?
 
     Clerk::SDK.new.sessions.revoke(session_id: session_id)
@@ -28,6 +25,22 @@ class SessionsController < ApplicationController
     # The cookies are cleared either way, so the user is signed out locally.
     # Worst case the session expires on Clerk's side on its own.
     Rails.logger.warn("[Sessions] could not revoke Clerk session: #{e.message}")
+  end
+
+  def clerk_session_id
+    token = cookies[Clerk::SESSION_COOKIE]
+    return if token.blank?
+
+    sdk = Clerk::SDK.new
+
+    begin
+      sdk.verify_token(token)["sid"]
+    rescue JWT::DecodeError
+      # Session tokens are only good for about a minute, so by the time someone
+      # clicks sign out theirs has usually expired. Revoking needs the id, not a
+      # currently valid token, and the revoke call is authenticated separately.
+      sdk.decode_token(token)["sid"]
+    end
   end
 
   def clear_clerk_cookies
