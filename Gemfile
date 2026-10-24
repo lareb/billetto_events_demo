@@ -48,7 +48,7 @@ gem "faraday"
 
 # Pin below 3.0: that release dropped the `quirks_mode:` keyword that this
 # Rails version's ActiveSupport::JSON::Encoding still passes to JSON.generate.
-gem "json", "~> 2.9"
+gem "json", "~> 3.1"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
