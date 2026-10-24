@@ -3,28 +3,6 @@ require "rails_helper"
 RSpec.describe Billetto::Adapter do
   subject(:adapter) { described_class.new(api_id: "id123", api_secret: "secret123", base_url: "https://api.billetto.test", path: "/v2/events") }
 
-  it "defaults to the real API's base URL and path" do
-    adapter = described_class.new(api_id: "id123", api_secret: "secret123")
-
-    stub_request(:get, "https://billetto.dk/api/v3/public/events")
-      .with(headers: { "Api-Keypair" => "id123:secret123" })
-      .to_return(status: 200, body: { "data" => [] }.to_json, headers: { "Content-Type" => "application/json" })
-
-    expect(adapter.list_public_events).to eq([])
-  end
-
-  it "sends the Api-Keypair header and returns the events array" do
-    stub_request(:get, "https://api.billetto.test/v2/events")
-      .with(headers: { "Api-Keypair" => "id123:secret123" })
-      .to_return(
-        status: 200,
-        body: { "data" => [ { "id" => "2036241", "title" => "Meetup" } ] }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-
-    expect(adapter.list_public_events).to eq([ { "id" => "2036241", "title" => "Meetup" } ])
-  end
-
   it "raises Billetto::RequestFailed on a non-success response" do
     stub_request(:get, "https://api.billetto.test/v2/events").to_return(status: 500, body: "boom")
 
@@ -35,5 +13,20 @@ RSpec.describe Billetto::Adapter do
     stub_request(:get, "https://api.billetto.test/v2/events").to_raise(Faraday::ConnectionFailed.new("down"))
 
     expect { adapter.list_public_events }.to raise_error(Billetto::RequestFailed)
+  end
+
+  describe "against the real Billetto API", :vcr do
+    subject(:adapter) do
+      creds = Rails.application.credentials.billetto || { api_id: "id123", api_secret: "secret123" }
+      described_class.new(api_id: creds[:api_id], api_secret: creds[:api_secret])
+    end
+
+    it "defaults to the real base URL and path, and returns events in the shape EventMapper expects" do
+      events = adapter.list_public_events
+
+      expect(events).to be_an(Array)
+      expect(events).not_to be_empty
+      expect(events.first).to include("id", "title", "startdate", "image_link")
+    end
   end
 end

@@ -56,9 +56,13 @@ bin/rails server
 bundle exec rspec
 ```
 
-35 examples: model validations, the Billetto adapter against stubbed HTTP, the
-auth gate on voting, the vote events and read model, and four browser specs
-through headless Chrome. No credentials needed.
+35 examples: model validations, error handling against stubbed HTTP, the auth
+gate on voting, the vote events and read model, and four browser specs through
+headless Chrome. No credentials needed, including the one spec that hits the
+real Billetto API: it replays a response recorded by VCR
+(`spec/cassettes/`) rather than making a live call. Delete the cassette and
+re-run with real credentials in `bin/rails credentials:edit` to record a fresh
+one.
 
 `HEADLESS=false` runs the browser specs in a visible window, `SLOWMO=1.5` adds a
 pause after each click.
