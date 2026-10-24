@@ -122,10 +122,9 @@ reads a user id off a cookie the specs set themselves, and is only wired up when
 - One vote per user per event, changeable rather than additive.
 - Ingestion is pull-based rather than webhook-driven.
 - Event images are stored as the URL Billetto returns, not mirrored.
-- The endpoint path in `Billetto::Adapter` is a guess: I had no account to check
-  the real path or response shape. It's overridable with `BILLETTO_API_PATH`,
-  and `EventMapper` tries a few key spellings so one renamed field doesn't break
-  ingestion.
+- `Billetto::Adapter` defaults to `GET /api/v3/public/events` on `billetto.dk`,
+  matching a live account. `EventMapper` also tries a couple of older key
+  spellings, so one renamed field won't break ingestion outright.
 - No `app/integrators/` process manager, since voting doesn't cross module
   boundaries yet.
 - No `ObjectRepository` or typed-id lookup; plain ActiveRecord finders are

@@ -1,15 +1,12 @@
 module Billetto
   # Auth is an Api-Keypair header of "<api_id>:<api_secret>", generated under
   # Organiser > Integrate > Developers.
-  #
-  # TODO: verify the path and response shape against a real account before
-  # using this for anything serious. Override with BILLETTO_API_PATH.
   class Adapter
     def initialize(
       api_id:,
       api_secret:,
-      base_url: ENV.fetch("BILLETTO_API_URL", "https://api.billetto.com"),
-      path: ENV.fetch("BILLETTO_API_PATH", "/v2/events"),
+      base_url: ENV.fetch("BILLETTO_API_URL", "https://billetto.dk"),
+      path: ENV.fetch("BILLETTO_API_PATH", "/api/v3/public/events"),
       connection: nil
     )
       @api_id = api_id
