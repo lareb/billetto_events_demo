@@ -74,8 +74,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install JS dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
 
       - name: Build JS bundle
         run: yarn build

@@ -1,0 +1,12 @@
+{
+  "ignored_warnings": [
+    {
+      "fingerprint": "98b26f60d776fd41ee6f088c833725145be9aac2d7c5b33780241c273622db42",
+      "note": "Rails version, not a real vulnerability. Dependabot already has an open PR for the bump.",
+      "link": "",
+      "warning_type": "Unmaintained Dependency",
+      "warning_code": 122
+    }
+  ],
+  "updated": "2026-10-24 15:30:00 +0000"
+}
