@@ -130,6 +130,10 @@ reads a user id off a cookie the specs set themselves, and is only wired up when
 - `Billetto::Adapter` defaults to `GET /api/v3/public/events` on `billetto.dk`,
   matching a live account. `EventMapper` also tries a couple of older key
   spellings, so one renamed field won't break ingestion outright.
+- Billetto paginates with a `limit` param and an `after` cursor (`has_more` /
+  `next_url` in the response). The adapter follows it, capped at 200 events
+  (`BILLETTO_API_MAX_EVENTS`) — a live account had 1000+, and a demo app has
+  no business mirroring the whole catalog.
 - No `app/integrators/` process manager, since voting doesn't cross module
   boundaries yet.
 - No `ObjectRepository` or typed-id lookup; plain ActiveRecord finders are
