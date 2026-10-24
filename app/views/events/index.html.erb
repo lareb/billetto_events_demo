@@ -6,39 +6,8 @@
   <p>No events yet. Run <code>bin/rails events:ingest</code> to fetch them from Billetto.</p>
 <% end %>
 
-<ul class="events">
-  <% @events.each do |event| %>
-    <li class="event" id="<%= dom_id(event) %>">
-      <% if event.image_url.present? %>
-        <%= image_tag event.image_url, alt: event.title, loading: "lazy" %>
-      <% end %>
-
-      <h2><%= event.title %></h2>
-      <p class="event-date"><%= event.starts_at.strftime("%B %-d, %Y %H:%M") %></p>
-      <p class="event-description"><%= event.description %></p>
-
-      <div class="votes">
-        <%= button_to "▲ #{event.upvotes}", vote_event_path(event_id: event.id, direction: "up"), method: :post %>
-        <%= button_to "▼ #{event.downvotes}", vote_event_path(event_id: event.id, direction: "down"), method: :post %>
-      </div>
-    </li>
+<ul class="events" translate="no">
+  <%= turbo_frame_tag "events_page_#{@page}" do %>
+    <%= render "page" %>
   <% end %>
 </ul>
-
-<% if @total_pages > 1 %>
-  <nav class="pagination">
-    <% if @page > 1 %>
-      <%= link_to "Previous", events_path(page: @page - 1) %>
-    <% else %>
-      <span>Previous</span>
-    <% end %>
-
-    <span>Page <%= @page %> of <%= @total_pages %></span>
-
-    <% if @page < @total_pages %>
-      <%= link_to "Next", events_path(page: @page + 1) %>
-    <% else %>
-      <span>Next</span>
-    <% end %>
-  </nav>
-<% end %>

@@ -8,10 +8,9 @@ module Billetto
       base_url: ENV.fetch("BILLETTO_API_URL", "https://billetto.dk"),
       path: ENV.fetch("BILLETTO_API_PATH", "/api/v3/public/events"),
       per_page: ENV.fetch("BILLETTO_API_LIMIT", 100).to_i,
-      # The real account this was built against had 1000+ public events. A
-      # demo app has no business mirroring the whole catalog, so pagination
-      # stops after this many even if Billetto's has_more says there's more.
-      max_events: ENV.fetch("BILLETTO_API_MAX_EVENTS", 200).to_i,
+      # Not a product limit, just a backstop against an infinite loop if
+      # Billetto's has_more/next_url ever misbehaves.
+      max_events: ENV.fetch("BILLETTO_API_MAX_EVENTS", 5000).to_i,
       connection: nil
     )
       @api_id = api_id
@@ -22,9 +21,8 @@ module Billetto
       @connection = connection || build_connection(base_url)
     end
 
-    # Billetto paginates with a cursor: each page reports has_more and a
-    # next_url carrying an after=<id> param. Follows it until has_more is
-    # false or max_events is hit.
+    # Follows Billetto's has_more/next_url cursor until it runs out or
+    # we hit max_events.
     def list_public_events
       events = []
       next_request = path_with_query(path, limit: per_page)
@@ -61,9 +59,8 @@ module Billetto
       "#{path}#{separator}#{URI.encode_www_form(params)}"
     end
 
-    # next_url is an absolute URL; this pulls just the path + query back off
-    # it so the request still goes through our existing connection (and its
-    # Api-Keypair header).
+    # next_url is absolute; pull just the path + query so it still goes
+    # through our connection.
     def request_uri_for(absolute_url)
       URI.parse(absolute_url).request_uri
     end

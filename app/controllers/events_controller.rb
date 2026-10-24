@@ -1,5 +1,5 @@
 class EventsController < ApplicationController
-  PER_PAGE = 6
+  PER_PAGE = 10
 
   def index
     scope = Events::Event.includes(:vote_count).order(starts_at: :asc)

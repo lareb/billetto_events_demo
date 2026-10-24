@@ -22,29 +22,28 @@ RSpec.describe "Events", type: :request do
   end
 
   describe "pagination" do
-    before { create_list(:event, 8) }
+    before { create_list(:event, 15) }
 
-    it "shows only a page's worth of events and links to the next page" do
+    it "shows only a page's worth of events, with a lazy-loading frame for the next page" do
       get root_path
 
       expect(response.body.scan(/class="event"/).count).to eq(EventsController::PER_PAGE)
-      expect(response.body).to include("Page 1 of 2")
-      expect(response.body).to include(%(href="/events?page=2"))
+      expect(response.body).to include(%(id="events_page_2"))
+      expect(response.body).to include(%(src="/events?page=2"))
     end
 
-    it "shows the remaining events on the last page with no next link" do
+    it "shows the remaining events on the last page, with no further page to load" do
       get root_path(page: 2)
 
-      expect(response.body.scan(/class="event"/).count).to eq(8 - EventsController::PER_PAGE)
-      expect(response.body).to include("Page 2 of 2")
-      expect(response.body).not_to include(%(href="/events?page=3"))
+      expect(response.body.scan(/class="event"/).count).to eq(15 - EventsController::PER_PAGE)
+      expect(response.body).not_to include(%(id="events_page_3"))
     end
 
     it "clamps an out-of-range page instead of erroring" do
       get root_path(page: 999)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Page 2 of 2")
+      expect(response.body.scan(/class="event"/).count).to eq(15 - EventsController::PER_PAGE)
     end
   end
 end

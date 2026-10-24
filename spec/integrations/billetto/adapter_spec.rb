@@ -74,9 +74,7 @@ RSpec.describe Billetto::Adapter do
   describe "against the real Billetto API", :vcr do
     subject(:adapter) do
       creds = Rails.application.credentials.billetto || { api_id: "id123", api_secret: "secret123" }
-      # per_page smaller than max_events forces a real second request, so
-      # this proves next_url-following works against Billetto's actual API,
-      # not just that one page came back.
+      # per_page < max_events forces a real second request, to prove pagination works.
       described_class.new(api_id: creds[:api_id], api_secret: creds[:api_secret], per_page: 10, max_events: 15)
     end
 

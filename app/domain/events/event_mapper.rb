@@ -1,8 +1,6 @@
 module Events
-  # Turns a raw Billetto event hash into our attributes. Confirmed against
-  # GET /api/v3/public/events on a live account: id, title, startdate,
-  # description, image_link. A couple of other spellings are kept as a
-  # fallback in case Billetto's API changes shape again.
+  # Maps a raw Billetto event hash to our attributes. A couple of
+  # alternate key spellings are kept as fallbacks just in case.
   class EventMapper
     def self.call(raw)
       raw = raw.stringify_keys

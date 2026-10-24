@@ -39,12 +39,8 @@ module BillettoEventsDemo
     # Don't generate system test files.
     config.generators.system_tests = nil
 
-    # Tests fake the session instead of talking to Clerk (see
-    # ApplicationController#stub_clerk_session). Everywhere else Clerk is
-    # required, and its middleware raises without credentials anyway, even on
-    # anonymous requests. This has to be decided here: by the time
-    # config/initializers runs, Clerk's railtie has already chosen whether to
-    # insert the middleware.
+    # Has to be decided here, not in an initializer: Clerk's railtie already
+    # picks whether to insert its middleware by the time initializers run.
     config.x.clerk_stubbed = Rails.env.test?
 
     if config.x.clerk_stubbed

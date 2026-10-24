@@ -1,8 +1,5 @@
 class SessionsController < ApplicationController
-  # Clerk has no hosted sign-out page, so the session is revoked through
-  # the backend API and the cookies cleared here. This route is excluded from
-  # Clerk's middleware (config/initializers/clerk.rb), so the session is read
-  # straight off the cookie rather than from request.env["clerk"].
+  # Clerk has no hosted sign-out page, so we revoke it ourselves here.
   def destroy
     if Rails.configuration.x.clerk_stubbed
       cookies.delete(:test_user_id)
@@ -41,9 +38,8 @@ class SessionsController < ApplicationController
     begin
       sdk.verify_token(token)["sid"]
     rescue JWT::DecodeError
-      # Session tokens are only good for about a minute, so by the time someone
-      # clicks sign out theirs has usually expired. Revoking needs the id, not a
-      # currently valid token, and the revoke call is authenticated separately.
+      # Tokens expire fast, so this one is likely expired by now. We just
+      # need the session id out of it, not a valid signature.
       sdk.decode_token(token)["sid"]
     end
   end

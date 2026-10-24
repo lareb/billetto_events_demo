@@ -1,0 +1,7 @@
+<%= render partial: "events/event", collection: @events, as: :event %>
+
+<% if @page < @total_pages %>
+  <%= turbo_frame_tag "events_page_#{@page + 1}", src: events_path(page: @page + 1), loading: :lazy do %>
+    <li class="loading-more">Loading more events…</li>
+  <% end %>
+<% end %>

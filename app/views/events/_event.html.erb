@@ -1,0 +1,34 @@
+<li class="event" translate="no">
+  <% if event.image_url.present? %>
+    <div class="event-image">
+      <%= image_tag event.image_url, alt: event.title, loading: "lazy" %>
+    </div>
+  <% end %>
+
+  <div class="event-body">
+    <p class="event-date"><%= event.starts_at.strftime("%B %-d, %Y · %H:%M") %></p>
+    <h2><%= event.title %></h2>
+    <% if event.description.present? %>
+      <% if event.description.length > 200 %>
+        <details class="event-description">
+          <summary><span class="preview"><%= truncate(event.description, length: 200, separator: " ") %></span></summary>
+          <p><%= event.description %></p>
+        </details>
+      <% else %>
+        <p class="event-description"><%= event.description %></p>
+      <% end %>
+    <% end %>
+
+    <%# Scoped to just the buttons so a vote doesn't collapse the description above. %>
+    <%= turbo_frame_tag(event) do %>
+      <% if local_assigns[:error].present? %>
+        <p class="vote-error"><%= error %></p>
+      <% end %>
+
+      <div class="votes">
+        <%= button_to "▲ #{event.upvotes}", vote_event_path(event_id: event.id, direction: "up"), method: :post, class: "vote-btn vote-up", data: { turbo_submits_with: "▲ …" } %>
+        <%= button_to "▼ #{event.downvotes}", vote_event_path(event_id: event.id, direction: "down"), method: :post, class: "vote-btn vote-down", data: { turbo_submits_with: "▼ …" } %>
+      </div>
+    <% end %>
+  </div>
+</li>

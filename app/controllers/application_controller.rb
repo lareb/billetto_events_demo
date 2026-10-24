@@ -7,7 +7,7 @@ class ApplicationController < ActionController::Base
 
   before_action :stub_clerk_session if Rails.configuration.x.clerk_stubbed
 
-  helper_method :current_user_id, :signed_in?, :clerk_sign_in_url, :clerk_sign_up_url
+  helper_method :current_user_id, :signed_in?, :clerk_sign_in_url, :clerk_sign_up_url, :clerk_publishable_key
 
   private
 
@@ -29,6 +29,10 @@ class ApplicationController < ActionController::Base
 
   def clerk_config
     Rails.application.credentials.clerk || {}
+  end
+
+  def clerk_publishable_key
+    clerk_config[:publishable_key].presence || ENV["CLERK_PUBLISHABLE_KEY"]
   end
 
   # Clerk's hosted pages live on another domain, so they need telling where to

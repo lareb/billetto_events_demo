@@ -4,13 +4,13 @@ RSpec.describe "Votes", type: :request do
   let(:event) { create(:event) }
 
   context "when signed out" do
-    it "redirects without recording a vote" do
+    it "shows an inline error without recording a vote or redirecting" do
       expect {
         post vote_event_path(event_id: event.id, direction: "up")
       }.not_to change(Votes::Vote, :count)
 
-      expect(response).to redirect_to(root_path)
-      follow_redirect!
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(%(id="events_event_#{event.id}"))
       expect(response.body).to include("Sign in to vote.")
     end
   end
@@ -18,20 +18,23 @@ RSpec.describe "Votes", type: :request do
   context "when signed in" do
     before { sign_in("user_1") }
 
-    it "records the vote and redirects with a confirmation" do
-      expect {
-        post vote_event_path(event_id: event.id, direction: "up")
-      }.to change(Votes::Vote, :count).by(1)
+    it "records the vote and updates the count in place, with no redirect" do
+      perform_enqueued_jobs do
+        expect {
+          post vote_event_path(event_id: event.id, direction: "up")
+        }.to change(Votes::Vote, :count).by(1)
+      end
 
-      expect(response).to redirect_to("#{root_path}#events_event_#{event.id}")
-      follow_redirect!
-      expect(response.body).to include("Vote recorded.")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(%(id="events_event_#{event.id}"))
+      expect(response.body).to include("▲ 1")
     end
 
-    it "rejects an invalid direction without raising a 500" do
+    it "shows an inline error for an invalid direction without raising a 500" do
       post vote_event_path(event_id: event.id, direction: "sideways")
 
-      expect(response).to redirect_to(root_path)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Direction is not included in the list")
       expect(Votes::Vote.count).to eq(0)
     end
 
