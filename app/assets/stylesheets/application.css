@@ -20,3 +20,5 @@ body { font-family: system-ui, sans-serif; max-width: 720px; margin: 0 auto; pad
 .event-date { color: #666; font-size: 0.9rem; }
 .votes { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
 .votes button { cursor: pointer; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; color: #666; }
+.pagination span:not(:nth-child(2)) { color: #bbb; }

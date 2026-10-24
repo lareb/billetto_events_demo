@@ -24,3 +24,21 @@
     </li>
   <% end %>
 </ul>
+
+<% if @total_pages > 1 %>
+  <nav class="pagination">
+    <% if @page > 1 %>
+      <%= link_to "Previous", events_path(page: @page - 1) %>
+    <% else %>
+      <span>Previous</span>
+    <% end %>
+
+    <span>Page <%= @page %> of <%= @total_pages %></span>
+
+    <% if @page < @total_pages %>
+      <%= link_to "Next", events_path(page: @page + 1) %>
+    <% else %>
+      <span>Next</span>
+    <% end %>
+  </nav>
+<% end %>
