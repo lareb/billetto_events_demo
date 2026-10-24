@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe Events::Service do
   describe "#ingest_from_billetto" do
     it "creates an Event per record returned by the adapter" do
-      adapter = instance_double(Billetto::FakeAdapter, list_public_events: [
+      adapter = instance_double(Billetto::Adapter, list_public_events: [
         { "id" => "evt_1", "name" => "Meetup", "starts_at" => "2026-11-01T18:00:00Z", "description" => "desc", "image" => { "url" => "https://example.com/a.png" } }
       ])
 
@@ -16,7 +16,7 @@ RSpec.describe Events::Service do
 
     it "updates an existing event instead of duplicating it" do
       create(:event, external_id: "evt_1", title: "Old Title")
-      adapter = instance_double(Billetto::FakeAdapter, list_public_events: [
+      adapter = instance_double(Billetto::Adapter, list_public_events: [
         { "id" => "evt_1", "name" => "New Title", "starts_at" => "2026-11-01T18:00:00Z", "description" => "desc", "image" => nil }
       ])
 
@@ -28,7 +28,7 @@ RSpec.describe Events::Service do
     end
 
     it "skips records without an id" do
-      adapter = instance_double(Billetto::FakeAdapter, list_public_events: [
+      adapter = instance_double(Billetto::Adapter, list_public_events: [
         { "name" => "No id event" }
       ])
 
@@ -38,7 +38,7 @@ RSpec.describe Events::Service do
     end
 
     it "logs and moves on when the Billetto API fails" do
-      adapter = instance_double(Billetto::FakeAdapter)
+      adapter = instance_double(Billetto::Adapter)
       allow(adapter).to receive(:list_public_events).and_raise(Billetto::RequestFailed, "503")
       create(:event, external_id: "evt_existing", title: "Already here")
 
@@ -50,7 +50,7 @@ RSpec.describe Events::Service do
     end
 
     it "skips a record with an unparseable date instead of blowing up" do
-      adapter = instance_double(Billetto::FakeAdapter, list_public_events: [
+      adapter = instance_double(Billetto::Adapter, list_public_events: [
         { "id" => "evt_bad", "name" => "Broken", "starts_at" => "not a date" }
       ])
 
@@ -59,10 +59,21 @@ RSpec.describe Events::Service do
       }.not_to change(Events::Event, :count)
     end
 
+    it "does nothing when no adapter is configured" do
+      expect {
+        described_class.new(nil).call(Events::IngestFromBilletto.new)
+      }.not_to change(Events::Event, :count)
+    end
+
     it "is reachable through the command bus" do
+      adapter = instance_double(Billetto::Adapter, list_public_events: [
+        { "id" => "evt_cb", "name" => "Via command bus", "starts_at" => "2026-11-01T18:00:00Z" }
+      ])
+      allow(Rails.configuration).to receive(:billetto).and_return(adapter)
+
       expect {
         Command.bus.call(Events::IngestFromBilletto.new)
-      }.to change(Events::Event, :count).by(3) # FakeAdapter's 3 sample events
+      }.to change(Events::Event, :count).by(1)
     end
   end
 end

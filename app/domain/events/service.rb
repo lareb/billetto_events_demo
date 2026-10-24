@@ -13,9 +13,12 @@ module Events
     attr_reader :billetto_adapter
 
     def ingest_from_billetto(_command)
-      raw_events = billetto_adapter.list_public_events
+      if billetto_adapter.nil?
+        Rails.logger.warn("[Events::Service] no Billetto adapter configured, skipping ingestion")
+        return false
+      end
 
-      raw_events.each { |raw_event| store(raw_event) }
+      billetto_adapter.list_public_events.each { |raw_event| store(raw_event) }
     rescue Billetto::RequestFailed => e
       # A failed sync shouldn't take down the caller (rake task, job, console).
       # Existing events stay as they are and the next run picks up again.

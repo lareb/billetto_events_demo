@@ -103,7 +103,8 @@ model.
   `Votes::Service`, which publishes `EventUpvoted` or `EventDownvoted`.
 - `app/jobs/vote_count_job.rb` subscribes to those on the `low` queue and keeps
   `vote_counts` up to date.
-- `app/integrations/billetto/` wraps the API, with a fake adapter for tests.
+- `app/integrations/billetto/` wraps the API. Tests use a recorded response
+  (VCR) or an `instance_double` rather than a hand-written fake client.
 
 One vote per event per user, backed by a unique index on `(event_id, user_id)`.
 Changing a vote updates the row and publishes a new fact, and the read model
